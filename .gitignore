@@ -3,8 +3,10 @@
 !/**/
 !*.*
 
-# Ignore some files
+# Ignore some files and folders
 .DS_Store
+*.dSYM/
+
 
 # Ignore VS Code config folder
 
