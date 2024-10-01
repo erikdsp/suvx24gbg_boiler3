@@ -1,0 +1,15 @@
+# Ignore files without extension
+*
+!/**/
+!*.*
+
+# Ignore some files
+.DS_Store
+
+# Ignore VS Code config folder
+
+.vscode/
+
+# Ignore temp folder
+
+temp/
