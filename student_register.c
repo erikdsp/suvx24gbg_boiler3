@@ -20,6 +20,7 @@ typedef struct student
 
 void clear_input_buffer();
 void initialize_student_list(Student* student_list, int sizeof_students);
+int select_id(Student* students, int sizeof_students, int* sel_id);
 int create_new_student(Student* student);
 int add_student_by_position(Student* destination, int position, int sizeof_students, Student* student, int* id);
 int add_student_lazy(Student* destination, int sizeof_students, Student* student, int* id);
@@ -87,11 +88,7 @@ int main ()
                 printf("\n");
                 break;
             case 3:
-                printf("Select Id: ");      // Function currently not working. 
-                scanf(" %d", &sel_student_id);
-                if (find_student_by_id(students, register_size, sel_student_id) < 0)
-                printf("No student registered with that ID\n");
-                else
+                if (select_id(students, register_size, &sel_student_id) >= 0)  
                 {
                     validation = create_new_student(&student_input);
                     validate_add = change_student_by_id(students, register_size, sel_student_id, &student_input);
@@ -100,18 +97,16 @@ int main ()
                 }
                 break;
             case 4:
-                printf("Select Id: ");
-                scanf(" %d", &sel_student_id);
-                if (find_student_by_id(students, register_size, sel_student_id) < 0)
-                printf("No student registered with that ID\n");
-                else remove_student_by_id(students, register_size, sel_student_id);
+                if (select_id(students, register_size, &sel_student_id) >= 0)
+                {
+                    remove_student_by_id(students, register_size, sel_student_id);
+                }                
                 break;
             case 5:
-                printf("Select Id: ");
-                scanf(" %d", &sel_student_id);
-                if (find_student_by_id(students, register_size, sel_student_id) < 0)
-                printf("No student registered with that ID\n");
-                else print_student_by_id(students, register_size, sel_student_id);
+                if (select_id(students, register_size, &sel_student_id) >= 0)
+                {
+                    print_student_by_id(students, register_size, sel_student_id);
+                }                
                 break;
             case 6:
                 exit(0);
@@ -142,6 +137,18 @@ void initialize_student_list(Student* student_list, int sizeof_students){
         strcpy(student_list[i].address.post_code, "");
         strcpy(student_list[i].address.city_name, "");
     }
+}
+
+int select_id(Student* students, int sizeof_students, int* sel_id)
+{
+    printf("Select Id: ");     
+    scanf(" %d", sel_id);
+    if (find_student_by_id(students, sizeof_students, *sel_id) < 0)
+    {
+        printf("No student registered with that ID\n");
+        return -1;
+    }
+    else return *sel_id;
 }
 
 int create_new_student(Student* student){
