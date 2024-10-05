@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h>  // Branch fileio_simple
+#include <stdlib.h>  
 #include <string.h>
 
 struct mailing_address
@@ -20,6 +20,8 @@ typedef struct student
 
 void clear_input_buffer();
 void initialize_student_list(Student* student_list, int sizeof_students);
+int get_students_from_file(Student* students, int sizeof_students);
+
 int select_id(Student* students, int sizeof_students, int* sel_id);
 int create_new_student(Student* student);
 int add_student_by_position(Student* destination, int position, int sizeof_students, Student* student, int* id);
