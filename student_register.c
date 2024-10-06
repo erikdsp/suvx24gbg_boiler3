@@ -42,7 +42,7 @@ int create_new_student(Student* student);
 int add_student_by_position(Student* destination, int position, int sizeof_students, Student* student, int* id);
 int add_student_lazy(Student* destination, int sizeof_students, Student* student, int* id);
 int change_student_by_id(Student* students, int sizeof_students, int id, Student* updated_info);
-int remove_student_by_id(Student* students, int sizeof_students, int id);
+bool remove_student_by_id(Student* students, int sizeof_students, int id);
 int print_student_by_id(Student* students, int sizeof_students, int id);
 int find_student_by_id(Student* students, int sizeof_students, int id );
 void update_id_list(Student* students, int sizeof_students, int dest_array[]);
@@ -60,9 +60,12 @@ int main ()
     int validation = 0;
     int validate_add = 0;
     int op;
+    bool register_has_changed = false;
+    bool successful_operation = false;
     Student student_input;
+    FILE* ptr; 
     
-    FILE* ptr = fopen("student_register.txt", "r");
+    ptr = fopen("student_register.txt", "r");
     file_is_valid = read_size_from_file(ptr, "<!STUDENT>", &size_file);
     read_size_from_user(&size_user);
     register_size = size_file + size_user;
@@ -94,7 +97,10 @@ int main ()
                 validation = create_new_student(&student_input);
                 validate_add = add_student_lazy(students, register_size, &student_input, &next_student_id);
                 if (validate_add >=0)
-                printf("Student added with ID: %d\n", students[validate_add].id);
+                {
+                    printf("Student added with ID: %d\n", students[validate_add].id);
+                    register_has_changed = true;
+                }
                 else 
                 printf("Error, student not added.\n");
                 break;
@@ -117,13 +123,18 @@ int main ()
                     validation = create_new_student(&student_input);
                     validate_add = change_student_by_id(students, register_size, sel_student_id, &student_input);
                     if (validate_add < 0) printf("Change to student %d unsuccessful\n", sel_student_id);
-                    else printf("Student %d successfully updated\n", sel_student_id);
+                    else 
+                    {
+                    printf("Student %d successfully updated\n", sel_student_id);
+                    register_has_changed = true;
+                    }
                 }
                 break;
             case 4:
                 if (select_id(students, register_size, &sel_student_id) >= 0)
                 {
-                    remove_student_by_id(students, register_size, sel_student_id);
+                    successful_operation = remove_student_by_id(students, register_size, sel_student_id);
+                    if (successful_operation) register_has_changed = true;
                 }                
                 break;
             case 5:
@@ -134,10 +145,11 @@ int main ()
                 break;
             case 6:
                 size_file = actual_size(id_list, register_size);
-                if (size_file > 0)
+                if (register_has_changed)
                 {
                     save_register_to_file(ptr, students, "student_register.txt", size_file);
                 }
+                printf("Welcome back!\n");
                 exit(0);
         default:
             break;
@@ -203,7 +215,6 @@ bool read_size_from_file(FILE* p, char tag[], int* s)
         printf("No file found. Initializing empty register\n");
         return false;
     }
-    int file_reg_size = 0;
     if (file_is_valid(p, "<!STUDENT>"))
     {
         read_register_size(p, s);
@@ -289,7 +300,7 @@ int save_register_to_file(FILE* p, Student* students, char file_name[], int size
     regsize_to_file(p, size);
     students_to_file(p, students, size);
     fclose(p);
-    printf("Register saved to %s\nWelcome back!\n", file_name);
+    printf("Register saved to %s\n", file_name);
     return size;    
 }
 
@@ -359,12 +370,12 @@ int add_student_lazy ( Student* destination, int sizeof_students, Student* stude
     return add_student_by_position(destination, find_student_by_id(destination, sizeof_students, -1), sizeof_students, student, id);
 }
 
-int remove_student_by_id(Student* students, int sizeof_students, int id)
+bool remove_student_by_id(Student* students, int sizeof_students, int id)
 {
     int index = find_student_by_id(students, sizeof_students, id);
     
     if ( index < 0 ){
-        return -1;
+        return false;
     } else {
         
         students[index].id = -1;
@@ -374,8 +385,7 @@ int remove_student_by_id(Student* students, int sizeof_students, int id)
         strcpy(students[index].address.street_name, "");
         strcpy(students[index].address.post_code, "");
         strcpy(students[index].address.city_name, "");
-
-        return 1;
+        return true;
     }
 }
 
@@ -392,7 +402,6 @@ int change_student_by_id(Student* students, int sizeof_students, int id, Student
         strcpy(students[index].address.street_name, updated_info->address.street_name);
         strcpy(students[index].address.post_code, updated_info->address.post_code);
         strcpy(students[index].address.city_name, updated_info->address.city_name);
-
         return 1;
     }
 }
