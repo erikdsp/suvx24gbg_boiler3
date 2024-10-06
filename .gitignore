@@ -13,5 +13,5 @@
 # Ignore temp folder
 temp/
 
-# Ignore saved register file
-student_register.txt
+# Ignore all text files
+*.txt
