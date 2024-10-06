@@ -1,6 +1,7 @@
 #include <stdio.h>  // Branch fileio_simple
 #include <stdlib.h>  
 #include <string.h>
+#include <stdbool.h>
 
 struct mailing_address
 {                               
@@ -18,9 +19,18 @@ typedef struct student
     struct mailing_address address;
 }Student;
 
+void clear_newline(FILE* p);
 void clear_input_buffer();
+int max(int x, int y);
+int read_register_size(FILE* p, int* size);
+void getint_from_file(FILE* p, int* i);
+void gets_from_file(FILE* p, char str[]);
+bool file_is_valid(FILE* p, char str[]);
+bool read_size_from_file(FILE* p, char filename[], char tag[], int* s);
+void read_size_from_user(int* s);
+int read_students_from_file(FILE* p, Student* destination, int size);
+
 void initialize_student_list(Student* student_list, int sizeof_students);
-int get_students_from_file(Student* students, int sizeof_students);
 
 int select_id(Student* students, int sizeof_students, int* sel_id);
 int create_new_student(Student* student);
@@ -37,15 +47,20 @@ int main ()
 {
 
     int next_student_id = 100;
-    int register_size = 10;
+    int size_file = 0;
+    int size_user = 0;
+    int register_size = 0;
+    bool file_is_valid;
     int sel_student_id = 0;
     int validation = 0;
     int validate_add = 0;
     int op;
     Student student_input;
+    FILE* ptr;
 
-    printf("How many users: ");
-    scanf(" %d", &register_size);
+    file_is_valid = read_size_from_file(ptr, "student_register.txt", "<!STUDENT>", &size_file);
+    read_size_from_user(&size_user);
+    register_size = size_file + size_user;
 
     Student students[register_size];
     int id_list[register_size];
@@ -121,12 +136,90 @@ int main ()
 }
 
 
+void clear_newline(FILE* p)
+{
+    fgetc(p);
+}
 
 void clear_input_buffer()
 {
     char c;
     while ((c=getchar()) != '\n' && c != EOF);
     
+}
+
+int read_register_size(FILE* p, int* size)
+{
+    fscanf(p, "%d", size);
+    clear_newline(p);
+    return *size;
+}
+
+
+
+
+void getint_from_file(FILE* p, int* i)
+{
+    fscanf(p, "%d", i);
+    clear_newline(p);
+}
+
+void gets_from_file(FILE* p, char str[])
+{
+    fscanf(p, "%[^\n]", str);
+    clear_newline(p);
+}
+
+bool file_is_valid(FILE* p, char str[])
+{
+    char valid[20];
+    gets_from_file(p, valid);
+    if (strcmp(valid, str) == 0) return true;
+    else return false;
+}
+
+bool read_size_from_file(FILE* p, char filename[], char tag[], int* s)
+{
+    p = fopen("student_register.txt", "r");
+    if (p == NULL)
+    {
+        printf("No file found. Initializing empty register\n");
+        return false;
+    }
+    int file_reg_size = 0;
+    if (file_is_valid(p, "<!STUDENT>"))
+    {
+        read_register_size(p, s);
+        return true;
+    }
+    else 
+    {
+    printf("Invalid file type. Initializing empty register\n");
+    return false;
+    }
+}
+
+void read_size_from_user(int* s)
+{
+    printf("How many users to add in this session: ");
+    scanf(" %d", s);
+}
+
+int read_students_from_file(FILE* p, Student* destination, int size)
+{
+    Student temp_student;
+    for(int i = 0 ; i < size ; i++)
+    {
+        getint_from_file(p, &temp_student.id);
+        gets_from_file(p, temp_student.name);
+        gets_from_file(p, temp_student.email);
+        gets_from_file(p, temp_student.phone_number);
+        gets_from_file(p, temp_student.address.street_name);
+        gets_from_file(p, temp_student.address.post_code);
+        gets_from_file(p, temp_student.address.city_name);
+        destination[i] = temp_student;
+    }
+    return 0;
 }
 
 void initialize_student_list(Student* student_list, int sizeof_students){
