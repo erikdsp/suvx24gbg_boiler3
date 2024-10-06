@@ -26,7 +26,7 @@ int read_register_size(FILE* p, int* size);
 void getint_from_file(FILE* p, int* i);
 void gets_from_file(FILE* p, char str[]);
 bool file_is_valid(FILE* p, char str[]);
-bool read_size_from_file(FILE* p, char filename[], char tag[], int* s);
+bool read_size_from_file(FILE* p, char tag[], int* s);
 void read_size_from_user(int* s);
 int read_students_from_file(FILE* p, Student* destination, int size);
 
@@ -56,17 +56,19 @@ int main ()
     int validate_add = 0;
     int op;
     Student student_input;
-    FILE* ptr;
-
-    file_is_valid = read_size_from_file(ptr, "student_register.txt", "<!STUDENT>", &size_file);
+    FILE* ptr = fopen("student_register.txt", "r");
+    file_is_valid = read_size_from_file(ptr, "<!STUDENT>", &size_file);
     read_size_from_user(&size_user);
     register_size = size_file + size_user;
 
     Student students[register_size];
     int id_list[register_size];
     int id_index = 0;
-
     initialize_student_list(students, register_size);
+    printf("%d\n", students[0].id);
+
+    if (file_is_valid) next_student_id = read_students_from_file(ptr, students, size_file);
+    fclose(ptr);
 
     while(1) 
     {
@@ -148,6 +150,12 @@ void clear_input_buffer()
     
 }
 
+int max(int x, int y)
+{
+    if (x >= y) return x;
+    else return y;
+}
+
 int read_register_size(FILE* p, int* size)
 {
     fscanf(p, "%d", size);
@@ -178,9 +186,8 @@ bool file_is_valid(FILE* p, char str[])
     else return false;
 }
 
-bool read_size_from_file(FILE* p, char filename[], char tag[], int* s)
+bool read_size_from_file(FILE* p, char tag[], int* s)
 {
-    p = fopen("student_register.txt", "r");
     if (p == NULL)
     {
         printf("No file found. Initializing empty register\n");
@@ -207,6 +214,7 @@ void read_size_from_user(int* s)
 
 int read_students_from_file(FILE* p, Student* destination, int size)
 {
+    int highest_id = 0;
     Student temp_student;
     for(int i = 0 ; i < size ; i++)
     {
@@ -218,8 +226,10 @@ int read_students_from_file(FILE* p, Student* destination, int size)
         gets_from_file(p, temp_student.address.post_code);
         gets_from_file(p, temp_student.address.city_name);
         destination[i] = temp_student;
+        highest_id = max(highest_id, temp_student.id);
     }
-    return 0;
+    printf("Imported %d students from file\n", size);
+    return highest_id + 1;
 }
 
 void initialize_student_list(Student* student_list, int sizeof_students){
