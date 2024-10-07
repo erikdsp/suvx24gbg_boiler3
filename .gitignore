@@ -13,5 +13,8 @@
 # Ignore temp folder
 temp/
 
-# Ignore all text files
+# Ignore all text files and json
 *.txt
+*.json
+
+.gitignore

@@ -23,6 +23,11 @@ void clear_newline(FILE* p);
 void clear_input_buffer();
 int max(int x, int y);
 
+void read_json_str(FILE* p, char str[]);
+void read_json_int(FILE* p, int* i);
+void consume_nested_json(FILE* p);
+bool read_json_head(FILE* p, char compstr[], int*i);
+
 int read_register_size(FILE* p, int* size);
 void getint_from_file(FILE* p, int* i);
 void gets_from_file(FILE* p, char str[]);
@@ -65,8 +70,9 @@ int main ()
     Student student_input;
     FILE* ptr; 
     
-    ptr = fopen("student_register.txt", "r");
-    file_is_valid = read_size_from_file(ptr, "<!STUDENT>", &size_file);
+    ptr = fopen("student_register.json", "r");
+    file_is_valid = read_json_head(ptr, "<!STUDENT>", &size_file);
+    // file_is_valid = read_size_from_file(ptr, "<!STUDENT>", &size_file);
     read_size_from_user(&size_user);
     register_size = size_file + size_user;
 
@@ -147,7 +153,7 @@ int main ()
                 size_file = actual_size(id_list, register_size);
                 if (register_has_changed)
                 {
-                    save_register_to_file(ptr, students, "student_register.txt", size_file);
+                    save_register_to_file(ptr, students, "student_register_tmp.txt", size_file);
                 }
                 printf("Welcome back!\n");
                 exit(0);
@@ -176,6 +182,44 @@ int max(int x, int y)
 {
     if (x >= y) return x;
     else return y;
+}
+
+void read_json_str(FILE* p, char str[])
+{
+    char c;
+    while ((c = fgetc(p)) != ':')
+     ;
+    while ((c = fgetc(p)) != '\"')
+     ;
+    fscanf(p, "%[^\"]", str);
+}
+
+void read_json_int(FILE* p, int* i)
+{
+    char c;
+    while ((c = fgetc(p)) != ':')
+     ;
+    fscanf(p, " %d", i);
+}
+
+void consume_nested_json(FILE* p)
+{
+    char c;
+    while ((c = fgetc(p)) != ':')
+     ;
+}
+
+bool read_json_head(FILE* p, char compstr[], int*i)
+{
+    char readstr[80];
+    read_json_str(p, readstr);
+    bool valid_file = (strcmp(readstr, compstr) == 0);
+    if (valid_file)
+    {
+        read_json_int(p, &i);
+        consume_nested_json(p);
+    }
+    return valid_file;
 }
 
 int read_register_size(FILE* p, int* size)
