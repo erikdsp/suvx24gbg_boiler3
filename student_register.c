@@ -27,6 +27,7 @@ void read_json_str(FILE* p, char str[]);
 void read_json_int(FILE* p, int* i);
 void consume_nested_json(FILE* p);
 bool read_json_head(FILE* p, char compstr[], int*i);
+int read_json_students(FILE* p, Student* destination, int size);
 
 int read_register_size(FILE* p, int* size);
 void getint_from_file(FILE* p, int* i);
@@ -75,13 +76,12 @@ int main ()
     // file_is_valid = read_size_from_file(ptr, "<!STUDENT>", &size_file);
     read_size_from_user(&size_user);
     register_size = size_file + size_user;
-
     Student students[register_size];
     int id_list[register_size];
     int id_index = 0;
     initialize_student_list(students, register_size);
 
-    if (file_is_valid) next_student_id = read_students_from_file(ptr, students, size_file);
+    if (file_is_valid) next_student_id = read_json_students(ptr, students, size_file);
     fclose(ptr);
 
     while(1) 
@@ -209,18 +209,47 @@ void consume_nested_json(FILE* p)
      ;
 }
 
-bool read_json_head(FILE* p, char compstr[], int*i)
+bool read_json_head(FILE* p, char compstr[], int* i)
 {
+    if (p == NULL)
+    {
+        printf("No file found. Initializing empty register\n");
+        return false;
+    }
     char readstr[80];
     read_json_str(p, readstr);
     bool valid_file = (strcmp(readstr, compstr) == 0);
     if (valid_file)
     {
-        read_json_int(p, &i);
+        read_json_int(p, i);
         consume_nested_json(p);
     }
+    else printf("Invalid file type. Initializing empty register\n");
     return valid_file;
 }
+
+int read_json_students(FILE* p, Student* destination, int size)
+{
+    int highest_id = 0;
+    Student temp_student;
+    for(int i = 0 ; i < size ; i++)
+    {
+        read_json_int(p, &temp_student.id);
+        read_json_str(p, temp_student.name);
+        read_json_str(p, temp_student.email);
+        read_json_str(p, temp_student.phone_number);
+        consume_nested_json(p);
+        read_json_str(p, temp_student.address.street_name);
+        read_json_str(p, temp_student.address.post_code);
+        read_json_str(p, temp_student.address.city_name);
+        destination[i] = temp_student;
+        highest_id = max(highest_id, temp_student.id);
+    }
+    printf("Imported %d students from file\n", size);
+    return highest_id + 1;
+}
+
+
 
 int read_register_size(FILE* p, int* size)
 {
