@@ -13,5 +13,6 @@
 # Ignore temp folder
 temp/
 
-# Ignore all text files
+# Ignore text files
+
 *.txt
