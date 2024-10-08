@@ -13,6 +13,7 @@
 # Ignore temp folder
 temp/
 
-# Ignore text files
-
+# Ignore all text files and json
 *.txt
+*.json
+
