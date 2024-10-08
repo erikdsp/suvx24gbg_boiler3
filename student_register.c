@@ -25,7 +25,7 @@ int max(int x, int y);
 void read_json_str(FILE* p, char str[]);
 void read_json_int(FILE* p, int* i);
 void consume_nested_json(FILE* p);
-bool read_json_head(FILE* p, char compstr[], int*i);
+bool read_json_head(FILE* p, int*i);
 int read_json_students(FILE* p, Student* destination, int size);
 
 void write_json_str(FILE* p, char pre[], char key[], char str[], char post[]);
@@ -65,7 +65,7 @@ int main ()
     FILE* ptr; 
     
     ptr = fopen("student_register.json", "r");
-    file_is_valid = read_json_head(ptr, "<!STUDENT>", &size_file);
+    file_is_valid = read_json_head(ptr, &size_file);
     read_size_from_user(&size_user);
     register_size = size_file + size_user;
 
@@ -197,7 +197,7 @@ void consume_nested_json(FILE* p)
      ;
 }
 
-bool read_json_head(FILE* p, char compstr[], int* i)
+bool read_json_head(FILE* p, int* i)
 {
     if (p == NULL)
     {
@@ -206,13 +206,16 @@ bool read_json_head(FILE* p, char compstr[], int* i)
     }
     char readstr[80];
     read_json_str(p, readstr);
-    bool valid_file = (strcmp(readstr, compstr) == 0);
+    bool valid_file = (strcmp(readstr, "<!STUDENT>") == 0);
     if (valid_file)
     {
         read_json_int(p, i);
         consume_nested_json(p);
     }
-    else printf("Invalid file type. Initializing empty register\n");
+    else 
+    {
+        printf("Invalid file type. Initializing empty register\n");
+    }
     return valid_file;
 }
 
@@ -234,6 +237,7 @@ int read_json_students(FILE* p, Student* destination, int size)
         highest_id = max(highest_id, temp_student.id);
     }
     printf("Imported %d students from file\n", size);
+    fclose(p);
     return highest_id + 1;
 }
 
