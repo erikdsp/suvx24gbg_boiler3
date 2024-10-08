@@ -6,8 +6,11 @@
 
 ### Program documentation
 
+2024-10-06
+Added features:
+Simple file implementation. Read and save to student_register.txt
 
-1.1.0
+2024-10-02
 Added features:
 Print Student by ID
 - prints all registered IDs in sorter order
@@ -15,7 +18,7 @@ Print Student by ID
 Bugfixes:
 Students are saved using ID instead of index. This fixed Change & Remove functions not working
 
-1.0
+2024-09-30
 Initial version
 
 
