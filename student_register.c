@@ -19,7 +19,6 @@ typedef struct student
     struct mailing_address address;
 }Student;
 
-void clear_newline(FILE* p);
 void clear_input_buffer();
 int max(int x, int y);
 
@@ -33,18 +32,8 @@ void write_json_str(FILE* p, char pre[], char key[], char str[], char post[]);
 void write_json_int(FILE* p, char pre[], char key[], int i, char post[]);
 int save_json_register(FILE* p, Student* source, char file_name[], int size);
 
-int read_register_size(FILE* p, int* size);
-void getint_from_file(FILE* p, int* i);
-void gets_from_file(FILE* p, char str[]);
-bool file_is_valid(FILE* p, char str[]);
-bool read_size_from_file(FILE* p, char tag[], int* s);
-void read_size_from_user(int* s);
-int read_students_from_file(FILE* p, Student* destination, int size);
 int actual_size(int array[], int size);
-void valid_to_file(FILE* p, char str[]);
-void regsize_to_file(FILE* p, int size);
-int students_to_file(FILE* p, Student* source, int size);
-int save_register_to_file(FILE* p, Student* students, char file_name[], int size);
+void read_size_from_user(int* s);
 
 void initialize_student_list(Student* student_list, int sizeof_students);
 int select_id(Student* students, int sizeof_students, int* sel_id);
@@ -157,7 +146,7 @@ int main ()
                 size_file = actual_size(id_list, register_size);
                 if (register_has_changed)
                 {
-                    save_json_register(ptr, students, "student_register_tmp.json", size_file);
+                    save_json_register(ptr, students, "student_register.json", size_file);
                 }
                 printf("Welcome back!\n");
                 exit(0);
@@ -169,11 +158,6 @@ int main ()
     return 0;
 }
 
-
-void clear_newline(FILE* p)
-{
-    fgetc(p);
-}
 
 void clear_input_buffer()
 {
@@ -297,81 +281,13 @@ int save_json_register(FILE* p, Student* source, char file_name[], int size)
 
 
 
-
-int read_register_size(FILE* p, int* size)
-{
-    fscanf(p, "%d", size);
-    clear_newline(p);
-    return *size;
-}
-
-
-
-
-void getint_from_file(FILE* p, int* i)
-{
-    fscanf(p, "%d", i);
-    clear_newline(p);
-}
-
-void gets_from_file(FILE* p, char str[])
-{
-    fscanf(p, "%[^\n]", str);
-    clear_newline(p);
-}
-
-bool file_is_valid(FILE* p, char str[])
-{
-    char valid[20];
-    gets_from_file(p, valid);
-    if (strcmp(valid, str) == 0) return true;
-    else return false;
-}
-
-bool read_size_from_file(FILE* p, char tag[], int* s)
-{
-    if (p == NULL)
-    {
-        printf("No file found. Initializing empty register\n");
-        return false;
-    }
-    if (file_is_valid(p, "<!STUDENT>"))
-    {
-        read_register_size(p, s);
-        return true;
-    }
-    else 
-    {
-    printf("Invalid file type. Initializing empty register\n");
-    return false;
-    }
-}
-
 void read_size_from_user(int* s)
 {
     printf("How many users to add in this session: ");
     scanf(" %d", s);
 }
 
-int read_students_from_file(FILE* p, Student* destination, int size)
-{
-    int highest_id = 0;
-    Student temp_student;
-    for(int i = 0 ; i < size ; i++)
-    {
-        getint_from_file(p, &temp_student.id);
-        gets_from_file(p, temp_student.name);
-        gets_from_file(p, temp_student.email);
-        gets_from_file(p, temp_student.phone_number);
-        gets_from_file(p, temp_student.address.street_name);
-        gets_from_file(p, temp_student.address.post_code);
-        gets_from_file(p, temp_student.address.city_name);
-        destination[i] = temp_student;
-        highest_id = max(highest_id, temp_student.id);
-    }
-    printf("Imported %d students from file\n", size);
-    return highest_id + 1;
-}
+
 
 int actual_size(int array[], int size)
 {
@@ -382,48 +298,6 @@ int actual_size(int array[], int size)
     }
     return act_size;
 }
-
-void valid_to_file(FILE* p, char str[])
-{
-    fprintf(p, "%s", str);
-}
-
-void regsize_to_file(FILE* p, int size)
-{
-    fprintf(p, "\n%d", size);
-}
-
-int students_to_file(FILE* p, Student* source, int size)
-{
-    for (int i = 0 ; i < size ; i++)
-    {
-    fprintf(p, "\n%d", source[i].id);
-    fprintf(p, "\n%s", source[i].name);
-    fprintf(p, "\n%s", source[i].email);
-    fprintf(p, "\n%s", source[i].phone_number);
-    fprintf(p, "\n%s", source[i].address.street_name);
-    fprintf(p, "\n%s", source[i].address.post_code);
-    fprintf(p, "\n%s", source[i].address.city_name);
-    }
-    return 0;
-}
-
-int save_register_to_file(FILE* p, Student* students, char file_name[], int size)
-{
-    p = fopen(file_name, "w");
-    if (p == NULL)
-    {
-        printf("Error in creating file\n");
-        return -1;
-    }
-    valid_to_file(p, "<!STUDENT>");
-    regsize_to_file(p, size);
-    students_to_file(p, students, size);
-    fclose(p);
-    printf("Register saved to %s\n", file_name);
-    return size;    
-}
-
 
 
 void initialize_student_list(Student* student_list, int sizeof_students){
