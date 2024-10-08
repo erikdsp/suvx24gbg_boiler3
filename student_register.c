@@ -29,6 +29,10 @@ void consume_nested_json(FILE* p);
 bool read_json_head(FILE* p, char compstr[], int*i);
 int read_json_students(FILE* p, Student* destination, int size);
 
+void write_json_str(FILE* p, char pre[], char key[], char str[], char post[]);
+void write_json_int(FILE* p, char pre[], char key[], int i, char post[]);
+int save_json_register(FILE* p, Student* source, char file_name[], int size);
+
 int read_register_size(FILE* p, int* size);
 void getint_from_file(FILE* p, int* i);
 void gets_from_file(FILE* p, char str[]);
@@ -73,9 +77,9 @@ int main ()
     
     ptr = fopen("student_register.json", "r");
     file_is_valid = read_json_head(ptr, "<!STUDENT>", &size_file);
-    // file_is_valid = read_size_from_file(ptr, "<!STUDENT>", &size_file);
     read_size_from_user(&size_user);
     register_size = size_file + size_user;
+
     Student students[register_size];
     int id_list[register_size];
     int id_index = 0;
@@ -153,7 +157,7 @@ int main ()
                 size_file = actual_size(id_list, register_size);
                 if (register_has_changed)
                 {
-                    save_register_to_file(ptr, students, "student_register_tmp.txt", size_file);
+                    save_json_register(ptr, students, "student_register_tmp.json", size_file);
                 }
                 printf("Welcome back!\n");
                 exit(0);
@@ -248,6 +252,49 @@ int read_json_students(FILE* p, Student* destination, int size)
     printf("Imported %d students from file\n", size);
     return highest_id + 1;
 }
+
+
+void write_json_str(FILE* p, char pre[], char key[], char str[], char post[])
+{
+    fprintf(p, "%s\"%s\" : \"%s\"%s", pre, key, str, post);
+}
+
+void write_json_int(FILE* p, char pre[], char key[], int i, char post[])
+{
+    fprintf(p, "%s\"%s\" : %d%s", pre, key, i, post);
+}
+
+int save_json_register(FILE* p, Student* source, char file_name[], int size)
+{
+    p = fopen(file_name, "w");
+    if (p == NULL)
+    {
+        printf("Error in creating file\n");
+        return -1;
+    }
+
+    write_json_str(p, "{\n  ", "format", "<!STUDENT>", ",\n");
+    write_json_int(p, "  ", "size", size, ",\n");
+    fprintf(p, "  \"students\" :\n[");
+    for (int i = 0 ; i < size ; i++)
+    {
+        write_json_int(p, "\n\t{ ", "id", source[i].id, ",\n");
+        write_json_str(p, "\t  ", "name", source[i].name, ",\n");
+        write_json_str(p, "\t  ", "email", source[i].email, ",\n");
+        write_json_str(p, "\t  ", "phone_number", source[i].phone_number, ",\n");
+        write_json_str(p, "\t  \"address\" :\n\t  { ", "street_name", source[i].address.street_name, ",\n");
+        write_json_str(p, "\t    ", "post_code", source[i].address.post_code, ",\n");
+        write_json_str(p, "\t    ", "city_name", source[i].address.city_name, " }\n\t}");
+        if (i < (size - 1)) fprintf(p, ",");
+    }
+    fprintf(p, "\n]\n}");
+
+    fclose(p);
+    
+    printf("Register saved to %s\n", file_name);
+    return size;    
+}
+
 
 
 
