@@ -35,16 +35,16 @@ int save_json_register(FILE* p, Student* source, char file_name[], int size);
 int actual_size(int array[], int size);
 void read_size_from_user(int* s);
 
-void initialize_student_list(Student* student_list, int sizeof_students);
+void initialize_student_list(Student* student_list, int start, int end);
 int select_id(Student* students, int sizeof_students, int* sel_id);
 int create_new_student(Student* student);
-int add_student_by_position(Student* destination, int position, int sizeof_students, Student* student, int* id);
-int add_student_lazy(Student* destination, int sizeof_students, Student* student, int* id);
+Student* add_student_by_position(Student* destination, int position, int* sizeof_students, Student* student, int* id);
+Student* add_student_lazy(Student* destination, int* sizeof_students, Student* student, int* id);
 int change_student_by_id(Student* students, int sizeof_students, int id, Student* updated_info);
 bool remove_student_by_id(Student* students, int sizeof_students, int id);
 int print_student_by_id(Student* students, int sizeof_students, int id);
 int find_student_by_id(Student* students, int sizeof_students, int id );
-void update_id_list(Student* students, int sizeof_students, int dest_array[]);
+int* update_id_list(Student* students, int sizeof_students, int dest_array[], int* current_size);
 void sort_array(int array[], int size);
 
 int main ()
@@ -63,23 +63,42 @@ int main ()
     bool successful_operation = false;
     Student student_input;
     FILE* ptr; 
-    
+    Student* students;
+    int* id_list;
+    int id_list_size = 0;
+
     ptr = fopen("student_register.json", "r");
     file_is_valid = read_json_head(ptr, &size_file);
-    read_size_from_user(&size_user);
+    size_user = 0;  // setting to zero will force realloc
     register_size = size_file + size_user;
 
-    Student students[register_size];
-    int id_list[register_size];
-    int id_index = 0;
-    initialize_student_list(students, register_size);
+    students = malloc(sizeof(students[0]) * register_size);
+    if (students == NULL)
+        {
+            printf("Memory allocation failed");
+            return 1; // Exit the program with an error code
+        }
+
+    id_list = malloc(sizeof(int) * register_size);
+    if (id_list == NULL)
+        {
+            printf("Memory allocation failed");
+            return 1; // Exit the program with an error code
+        }
+    id_list_size = register_size;
+
+    // Student students[register_size];
+    // int id_list[register_size];
+    // int id_index = 0;
+    initialize_student_list(students, 0, register_size);
 
     if (file_is_valid) next_student_id = read_json_students(ptr, students, size_file);
     fclose(ptr);
 
     while(1) 
     {
-        update_id_list(students, register_size, id_list);
+        id_list = update_id_list(students, register_size, id_list, &id_list_size);
+        // update_id_list(students2, register_size, id_list2);
         printf("\n---Student registration ---\n");
         printf("1. Add new student\n");
         printf("2. Print student ids\n");
@@ -93,15 +112,16 @@ int main ()
     
         {
             case 1:
-                validation = create_new_student(&student_input);
-                validate_add = add_student_lazy(students, register_size, &student_input, &next_student_id);
-                if (validate_add >=0)
+                create_new_student(&student_input);
+                int id_before_add = next_student_id;
+                students = add_student_lazy(students, &register_size, &student_input, &next_student_id);
+                if (next_student_id > id_before_add)
                 {
-                    printf("Student added with ID: %d\n", students[validate_add].id);
+                    // printf("Student added with ID: %d\n", students[validate_add].id);
                     register_has_changed = true;
                 }
                 else 
-                printf("Error, student not added.\n");
+                    printf("Error, student not added.\n");
                 break;
             case 2:
                 printf("Registered students:\n");
@@ -109,7 +129,7 @@ int main ()
                 {
                     if (id_list[i] != -1) 
                     {
-                        id_index = find_student_by_id(students, register_size, id_list[i]);
+                        int id_index = find_student_by_id(students, register_size, id_list[i]);
                         printf("ID: %i  Name: %s\n", students[id_index].id, students[id_index].name);
                     }
 
@@ -119,7 +139,7 @@ int main ()
             case 3:
                 if (select_id(students, register_size, &sel_student_id) >= 0)  
                 {
-                    validation = create_new_student(&student_input);
+                    create_new_student(&student_input);
                     validate_add = change_student_by_id(students, register_size, sel_student_id, &student_input);
                     if (validate_add < 0) printf("Change to student %d unsuccessful\n", sel_student_id);
                     else 
@@ -149,6 +169,8 @@ int main ()
                     save_json_register(ptr, students, "student_register.json", size_file);
                 }
                 printf("Welcome back!\n");
+                free(students);
+                free(id_list);
                 exit(0);
         default:
             break;
@@ -304,8 +326,8 @@ int actual_size(int array[], int size)
 }
 
 
-void initialize_student_list(Student* student_list, int sizeof_students){
-    for ( int i = 0; i < sizeof_students; i++ ){
+void initialize_student_list(Student* student_list, int start, int end){
+    for ( int i = start; i < end; i++ ){
         student_list[i].id = -1;
         strcpy(student_list[i].name, "");
         strcpy(student_list[i].email, "");
@@ -350,22 +372,38 @@ int create_new_student(Student* student){
         return 0;
 }
 
-int add_student_by_position(Student* destination, int position, int sizeof_students, Student* student, int* id)   
+Student* add_student_by_position(Student* destination, int position, int* sizeof_students, Student* student, int* id)   
 {   
-    if (position>=0 && position<sizeof_students)
+    // if called with position -1 more memory needs to be allocated
+    if (position == -1)
+    {
+        Student* tmp;
+        int newsize = *sizeof_students + 10;
+        tmp = realloc(destination, sizeof(destination[0]) * newsize);
+        if (tmp != NULL) 
+        {
+            destination = tmp;
+            position = *sizeof_students;    // first available index is sizeof_students
+            *sizeof_students = newsize;     // update register size
+        }
+        else printf("Reallocation of Students failed\n");
+    }
+
+    if (position>=0 && position<*sizeof_students)
     {   
         student->id = *id;
         destination[position] = *student;
         (*id)++;
-        return position;
+        printf("Student added with ID: %d\n", destination[position].id);
+        // return position;
     }   
-    else return -1;
+    return destination;
 }
 
 
-int add_student_lazy ( Student* destination, int sizeof_students, Student* student, int* id)
+Student* add_student_lazy ( Student* destination, int* sizeof_students, Student* student, int* id)
 {
-    return add_student_by_position(destination, find_student_by_id(destination, sizeof_students, -1), sizeof_students, student, id);
+    return add_student_by_position(destination, find_student_by_id(destination, *sizeof_students, -1), sizeof_students, student, id);
 }
 
 bool remove_student_by_id(Student* students, int sizeof_students, int id)
@@ -435,13 +473,27 @@ int find_student_by_id(Student* students, int sizeof_students, int id)
     return -1;
 }
 
-void update_id_list(Student* students, int sizeof_students, int dest_array[])
+int* update_id_list(Student* students, int sizeof_students, int dest_array[], int* current_size)
 {
+    if (*current_size < sizeof_students)
+    {
+        int* tmp;
+        tmp = realloc(dest_array, sizeof(int) * sizeof_students);
+        if (tmp != NULL) 
+        {
+            dest_array = tmp;
+            *current_size = sizeof_students;
+        }
+        else printf("Reallocation of id_list failed\n");
+    }
+
+    // printf("register size: %d id-list size: %d\n", sizeof_students, *current_size); // for debugging only
     for ( int i = 0; i < sizeof_students; i++ )
     {
         dest_array[i] = students[i].id;
     }
     sort_array(dest_array, sizeof_students);
+    return dest_array;
 }
 
 void sort_array(int array[], int size)
