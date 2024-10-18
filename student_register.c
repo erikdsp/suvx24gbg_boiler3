@@ -19,22 +19,26 @@ typedef struct student
     struct mailing_address address;
 }Student;
 
+// helper functions
 void clear_input_buffer();
 int max(int x, int y);
 
+// functions for reading file and initializing
 void read_json_str(FILE* p, char str[]);
 void read_json_int(FILE* p, int* i);
 void consume_nested_json(FILE* p);
 bool read_json_head(FILE* p, int*i);
 int read_json_students(FILE* p, Student* destination, int size);
+Student* initialize_register(Student* destination, char file_name[], int* sizeof_destination, int* next_index);
+int* initialize_id_list(int sizeof_register);
 
+// functions for saving file
+int actual_size(int array[], int size);
 void write_json_str(FILE* p, char pre[], char key[], char str[], char post[]);
 void write_json_int(FILE* p, char pre[], char key[], int i, char post[]);
-int save_json_register(FILE* p, Student* source, char file_name[], int size);
+int save_json_register(Student* source, char file_name[], int size);
 
-int actual_size(int array[], int size);
-void read_size_from_user(int* s);
-
+// functions for various menu operations
 void initialize_student_list(Student* student_list, int start, int end);
 int select_id(Student* students, int sizeof_students, int* sel_id);
 int create_new_student(Student* student);
@@ -44,61 +48,31 @@ int change_student_by_id(Student* students, int sizeof_students, int id, Student
 bool remove_student_by_id(Student* students, int sizeof_students, int id);
 int print_student_by_id(Student* students, int sizeof_students, int id);
 int find_student_by_id(Student* students, int sizeof_students, int id );
-int* update_id_list(Student* students, int sizeof_students, int dest_array[], int* current_size);
+int* update_id_list(Student* students, int sizeof_students, int dest_array[], int* sizeof_id_list);
 void sort_array(int array[], int size);
 
 int main ()
 {
 
-    int next_student_id = 100;
-    int size_file = 0;
-    int size_user = 0;
-    int register_size = 0;
-    bool file_is_valid;
-    int sel_student_id = 0;
-    int validation = 0;
-    int validate_add = 0;
-    int op;
-    bool register_has_changed = false;
-    bool successful_operation = false;
     Student student_input;
-    FILE* ptr; 
     Student* students;
+    int register_size = 0;
     int* id_list;
     int id_list_size = 0;
+    int next_student_id = 100;
+    int sel_student_id = 0;
+    int size_save = 0;
+    int op;
+    bool register_has_changed = false;
 
-    ptr = fopen("student_register.json", "r");
-    file_is_valid = read_json_head(ptr, &size_file);
-    size_user = 0;  // setting to zero will force realloc
-    register_size = size_file + size_user;
-
-    students = malloc(sizeof(students[0]) * register_size);
-    if (students == NULL)
-        {
-            printf("Memory allocation failed");
-            return 1; // Exit the program with an error code
-        }
-
-    id_list = malloc(sizeof(int) * register_size);
-    if (id_list == NULL)
-        {
-            printf("Memory allocation failed");
-            return 1; // Exit the program with an error code
-        }
+    students = initialize_register(students, "student_register.json", &register_size, &next_student_id);
+    id_list = initialize_id_list(register_size);
     id_list_size = register_size;
-
-    // Student students[register_size];
-    // int id_list[register_size];
-    // int id_index = 0;
-    initialize_student_list(students, 0, register_size);
-
-    if (file_is_valid) next_student_id = read_json_students(ptr, students, size_file);
-    fclose(ptr);
 
     while(1) 
     {
         id_list = update_id_list(students, register_size, id_list, &id_list_size);
-        // update_id_list(students2, register_size, id_list2);
+
         printf("\n---Student registration ---\n");
         printf("1. Add new student\n");
         printf("2. Print student ids\n");
@@ -108,8 +82,8 @@ int main ()
         printf("6. Exit\n");
         printf("--> ");
         scanf(" %d", &op);
-        switch (op)
-    
+
+        switch (op)    
         {
             case 1:
                 create_new_student(&student_input);
@@ -117,7 +91,6 @@ int main ()
                 students = add_student_lazy(students, &register_size, &student_input, &next_student_id);
                 if (next_student_id > id_before_add)
                 {
-                    // printf("Student added with ID: %d\n", students[validate_add].id);
                     register_has_changed = true;
                 }
                 else 
@@ -140,7 +113,7 @@ int main ()
                 if (select_id(students, register_size, &sel_student_id) >= 0)  
                 {
                     create_new_student(&student_input);
-                    validate_add = change_student_by_id(students, register_size, sel_student_id, &student_input);
+                    int validate_add = change_student_by_id(students, register_size, sel_student_id, &student_input);
                     if (validate_add < 0) printf("Change to student %d unsuccessful\n", sel_student_id);
                     else 
                     {
@@ -152,7 +125,7 @@ int main ()
             case 4:
                 if (select_id(students, register_size, &sel_student_id) >= 0)
                 {
-                    successful_operation = remove_student_by_id(students, register_size, sel_student_id);
+                    bool successful_operation = remove_student_by_id(students, register_size, sel_student_id);
                     if (successful_operation) register_has_changed = true;
                 }                
                 break;
@@ -163,10 +136,10 @@ int main ()
                 }                
                 break;
             case 6:
-                size_file = actual_size(id_list, register_size);
+                size_save = actual_size(id_list, register_size);
                 if (register_has_changed)
                 {
-                    save_json_register(ptr, students, "student_register.json", size_file);
+                    save_json_register(students, "student_register.json", size_save);
                 }
                 printf("Welcome back!\n");
                 free(students);
@@ -263,6 +236,43 @@ int read_json_students(FILE* p, Student* destination, int size)
     return highest_id + 1;
 }
 
+Student* initialize_register(Student* destination, char file_name[], int* sizeof_destination, int* next_index)
+{
+    FILE* ptr; 
+    int size_file = 0;          
+    int size_user = 0;          
+
+    ptr = fopen(file_name, "r");
+    bool file_is_valid = read_json_head(ptr, &size_file);
+    size_user = 10;  // setting to zero will force realloc
+    *sizeof_destination = size_file + size_user;
+
+    destination = malloc(sizeof(destination[0]) * (*sizeof_destination));
+    if (destination == NULL)
+        {
+            printf("Memory allocation failed");
+            exit(1); // Exit the program with an error code
+        }
+
+    initialize_student_list(destination, 0, *sizeof_destination);
+
+    if (file_is_valid) *next_index = read_json_students(ptr, destination, size_file);
+    fclose(ptr);
+
+    return destination;
+}
+
+int* initialize_id_list(int sizeof_register)
+{
+    int* id_list = malloc(sizeof(int) * (sizeof_register));
+    if (id_list == NULL)
+        {
+            printf("Memory allocation failed");
+            exit(1); // Exit the program with an error code
+        }
+    return id_list;
+}
+
 
 void write_json_str(FILE* p, char pre[], char key[], char str[], char post[])
 {
@@ -274,8 +284,9 @@ void write_json_int(FILE* p, char pre[], char key[], int i, char post[])
     fprintf(p, "%s\"%s\" : %d%s", pre, key, i, post);
 }
 
-int save_json_register(FILE* p, Student* source, char file_name[], int size)
+int save_json_register(Student* source, char file_name[], int size)
 {
+    FILE* p;
     p = fopen(file_name, "w");
     if (p == NULL)
     {
@@ -305,13 +316,6 @@ int save_json_register(FILE* p, Student* source, char file_name[], int size)
     return size;    
 }
 
-
-
-void read_size_from_user(int* s)
-{
-    printf("How many users to add in this session: ");
-    scanf(" %d", s);
-}
 
 
 
@@ -386,7 +390,7 @@ Student* add_student_by_position(Student* destination, int position, int* sizeof
             position = *sizeof_students;    // first available index is sizeof_students
             *sizeof_students = newsize;     // update register size
         }
-        else printf("Reallocation of Students failed\n");
+        else printf("Reallocation of Students failed\n");   // add option to save backup if this happens?
     }
 
     if (position>=0 && position<*sizeof_students)
@@ -395,7 +399,6 @@ Student* add_student_by_position(Student* destination, int position, int* sizeof
         destination[position] = *student;
         (*id)++;
         printf("Student added with ID: %d\n", destination[position].id);
-        // return position;
     }   
     return destination;
 }
@@ -473,21 +476,21 @@ int find_student_by_id(Student* students, int sizeof_students, int id)
     return -1;
 }
 
-int* update_id_list(Student* students, int sizeof_students, int dest_array[], int* current_size)
+int* update_id_list(Student* students, int sizeof_students, int dest_array[], int* sizeof_id_list)
 {
-    if (*current_size < sizeof_students)
+    // allocate more memory to id_list
+    if (*sizeof_id_list < sizeof_students)
     {
         int* tmp;
         tmp = realloc(dest_array, sizeof(int) * sizeof_students);
         if (tmp != NULL) 
         {
             dest_array = tmp;
-            *current_size = sizeof_students;
+            *sizeof_id_list = sizeof_students;
         }
         else printf("Reallocation of id_list failed\n");
     }
 
-    // printf("register size: %d id-list size: %d\n", sizeof_students, *current_size); // for debugging only
     for ( int i = 0; i < sizeof_students; i++ )
     {
         dest_array[i] = students[i].id;
